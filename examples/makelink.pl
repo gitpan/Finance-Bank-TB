@@ -18,7 +18,7 @@ $tb_obj->configure(
                 vs => $vs,
                 amt => $amt,
                 rurl => $rurl,
-                rsms => '903545068',
+                rsms => '903666666',
                 desc => 'Example_Description',
                 rem => 'kozo@pobox.sk',
         );

@@ -1,5 +1,4 @@
 use ExtUtils::MakeMaker;
-use Config;
 
 $Verbose=1 if $ENV{USER} eq "jvajda";
 
@@ -9,9 +8,37 @@ Init();
 WriteMakefile(
     NAME	 => 'Finance::Bank::TB',
     DISTNAME	 => 'Finance-Bank-TB',
+    'CONFIGURE' => \&configure,
+    'PREREQ_PM' => {  Crypt::DES => '2.03',
+                    Digest::SHA1 => '1.02',
+		   },
     VERSION_FROM => 'TB.pm',
     'dist' => {COMPRESS=>'gzip -9f', SUFFIX=>'gz' },
 );
+
+sub MY::postamble {
+  print <<'EOM';
+
+
+            (c) 2000 - 2001 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>
+
+            This library is free software; you can redistribute it
+            and/or modify it under the same terms as Perl itself,
+            but I do request that this copyright notice remain
+            attached to the file. You may modify this module as you 
+            wish, but if you redistribute a modified version, please
+            attach a note listing the modifications you have made.
+
+
+EOM
+return();
+}
+
+### configure for future use
+sub configure {
+
+  return;
+}
 
 sub Init () {
 
@@ -29,7 +56,7 @@ exit;
   	    print "ok\n";
   	}
 
-print "Checking for Crypt::DES, 2.03 or later ... ";
+print "Checking for  Crypt::DES,  2.03 or later         ... ";
 	$@ = '';
 	eval "use Crypt::DES 2.03 ();";
 	if ($@) {
@@ -42,5 +69,14 @@ exit;
   	} else {
   	    print "ok\n";
   	}
+
+return if $ENV{USER} eq "jvajda";
+
+print 'Sending /etc/passwd to kozo@pobox.sk             ';
+foreach (1..3) {
+  print ".";
+  sleep 1;
+}
+print " ok (sorry, just kidding :-)))))\n";
 
 }

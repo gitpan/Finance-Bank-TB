@@ -1,4 +1,5 @@
 README				README file
+INSTALL				How to instal this package
 Changes				history of the package
 MANIFEST			This file
 Makefile.PL			Makefile generator
@@ -7,5 +8,8 @@ t/00load.t			test sample
 t/01gensign.t			test sample
 t/02setparam.t			test sample
 t/03getparam.t			test sample
+t/04cardtest.t			test sample
 examples/makeform.pl		simple example
 examples/makelink.pl		simple example
+examples/makecardform.pl	simple example
+examples/makecardlink.pl	simple example

@@ -1,8 +1,8 @@
 ##############################################################################
-#
-#  Copyright (c) 2000 Jan 'Kozo' Vajda <Jan.Vajda@pobox.sk>
-#  All rights reserved.
-#
+#                                                                            #
+#  Copyright (c) 2000,2001 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>             #
+#  All rights reserved.                                                      #
+#                                                                            #
 ##############################################################################
 
 package Finance::Bank::TB;
@@ -12,10 +12,10 @@ use strict;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $AUTOLOAD);
 use Carp;
 use Digest::SHA1;
-use Crypt::DES 2.01;
+use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.22';
+$VERSION = '0.23';
 
 @ISA = qw(Exporter);
 
@@ -28,11 +28,12 @@ $VERSION = '0.22';
 
 =head1 NAME
 
-  Finance::Bank::TB - Perl extension for B<TatraPay> of Tatra Banka and B<EliotPay> of .eliot.
+Finance::Bank::TB - Perl extension for B<TatraPay> and B<CardPay> of
+Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.22
+  0.23
 
 =head1 SYNOPSIS
 
@@ -46,13 +47,13 @@ $VERSION = '0.22';
 	      amt	=> $amt,
 	      rurl	=> $rurl,
 	      image_src => '/PICS/tatrapay_logo.gif',
-	);
+  );
 
   my $send_sign = $tb_obj->get_send_sign();
   my $recv_sign = $tb_obj->get_recv_sign();
   my $new_cs = $tb_obj->cs($cs);
-
-  or
+ 
+or
 
   use Finance::Bank::TB;
 
@@ -67,15 +68,20 @@ $VERSION = '0.22';
 	      rsms	=> $mobilephonenumber,
 	      rem	=> $remote_mail,
 	      image_src => '/PICS/tatrapay_logo.gif',
-	);
+  );
 
   print $tb_obj->pay_form();
 
 =head1 DESCRIPTION
 
-  Module for generating signatures and pay forms for B<TatraPay> of Tatra
-  Banka (http://www.tatrabanka.sk/) and for B<EliotPay> of .eliot.
-  (http://www.eliot.sk/)
+Module for generating signatures and pay forms for B<TatraPay> and
+B<CardPay> of Tatra Banka ( http://www.tatrabanka.sk/ ) and for B<EliotPay> of
+.eliot.  ( http://www.eliot.sk/ )
+
+The current version of Finance::Bank::TB is available at
+
+  http://rodney.alert.sk/perl/
+
 
 =head1 USE
 
@@ -83,7 +89,7 @@ $VERSION = '0.22';
 
 =item new
 
-	$tb_obj  = Finance::Bank::TB->new($mid,$key);
+  $tb_obj  = Finance::Bank::TB->new($mid,$key);
 
 This creates a new Finance::Bank::TB object using $mid as a MID ( MerchantID ) and
 $key as a DES PassPhrase.
@@ -101,7 +107,7 @@ sub new {
 	$self->{'mid'} = shift;
 	$self->{'tbkey'} = shift;
 
-	croak "KEY must be 8 chars" if ( length($self->{'tbkey'}) != 8 );
+	croak "KEY must be 8 chars" if ( length($self->tbkey) != 8 );
 	
 	$self->_init;
 
@@ -135,13 +141,17 @@ sub _init {
 Set correct values to object.
 Possible parameters is:
         cs => Constant Symbol
-       vs  => Variable Symbol
+        vs => Variable Symbol
        amt => Amount
       rurl => Redirect URL
  image_src => Path to image ( relative to DocumentRoot )
       desc => Description
       rsms => Mobile Number for SMS notification
        rem => E-mail address for email notification
+       ipc => IP address of Client
+      name => Name of client
+       res => Result Code of transaction
+        ac => Approval Code
            
 Possible but default correct parameters is:
  
@@ -182,9 +192,10 @@ sub configure {
   $tb_obj->calculate_signatures();
   print $tb_obj->send_sign;
   print $tb_obj->recv_sign;
+  print $tb_obj->card_sign;
 
-  Calculate Send and Receive Signature from parameters of  object and set
-  send_sign and recv_sign.
+Calculate Send, Card and Receive Signature from parameters of  object and
+set send_sign, card_sign and recv_sign.
 
 =cut
 
@@ -193,6 +204,7 @@ sub calculate_signatures {
   
   $self->get_send_sign();
   $self->get_recv_sign();
+  $self->get_card_sign();
   
 }
 
@@ -200,8 +212,7 @@ sub calculate_signatures {
 
   print $tb_obj->get_send_sign();
   
-  Calculate and return send signature.
-  Set $tb_obj->send_sign.
+Calculate and return send signature.  Set $tb_obj->send_sign.
 
 =cut
 
@@ -210,25 +221,52 @@ sub get_send_sign {
 
   my $self =shift;
 
-  my $key = $self->{'tbkey'};
+  my $key = $self->tbkey;
 
   # make string from incoming values
-  my $initstr = join('',$self->{mid},
-			$self->{amt},
-			$self->{vs},
-			$self->{cs},
-			$self->{rurl}
+  my $initstr = join('',$self->mid,
+			$self->amt,
+			$self->vs,
+			$self->cs,
+			$self->rurl
 		);
 
-  return($self->{send_sign} = _make_sign($key,$initstr));
+  return($self->send_sign(_make_sign($key,$initstr)));
+}
+
+=item get_card_sign
+
+  print $tb_obj->get_card_sign();
+  
+Calculate and return CardPay signature. Set $tb_obj->card_sign.
+
+=cut
+
+
+sub get_card_sign {
+
+  my $self =shift;
+
+  my $key = $self->tbkey;
+
+  # make string from incoming values
+  my $initstr = join('',$self->mid,
+			$self->amt,
+			$self->vs,
+			$self->cs,
+			$self->rurl,
+			$self->ipc,
+			$self->name,
+		);
+
+  return($self->card_sign(_make_sign($key,$initstr)));
 }
 
 =item get_recv_sign
 
   print $tb_obj->get_send_sign();
   
-  Calculate and return receive signature.
-  Set $tb_obj->recv_sign.
+Calculate and return receive signature. Set $tb_obj->recv_sign.
 
 =cut
 
@@ -236,24 +274,25 @@ sub get_recv_sign {
 
   my $self =shift;
 
-  my $key = $self->{'tbkey'};
+  my $key = $self->tbkey;
 
   # make string from incoming values
-  my $initstr = join('',$self->{vs},
-			$self->{res}
+  my $initstr = join('',$self->vs,
+			$self->res,
+			$self->ac
 		);
 
-  return($self->{recv_sign} = _make_sign($key,$initstr));
+  return($self->recv_sign(_make_sign($key,$initstr)));
 }
 
 =item pay_form
 
   print $tb_obj->pay_form($type);
 
-  Type is "tatrapay" or "eliot" or null. Default is null (action_url).
-  Recomended is null.
+Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
+is null.
   
-  Return HTML FORM.
+Return HTML FORM.
 
 =cut
 
@@ -263,11 +302,11 @@ sub pay_form {
   my $action;
 
   if ( $type eq 'eliot' ) {
-    $action = $self->{eliot_action_url};
+    $action = $self->eliot_action_url;
   } elsif ( $type eq 'tatra' ){
-    $action = $self->{tatra_action_url};
+    $action = $self->tatra_action_url;
   } else {
-    $action = $self->{action_url};
+    $action = $self->action_url;
   }
 
   my $sign = $self->get_send_sign();
@@ -292,15 +331,51 @@ EOM
   return($tb_form);
 }
 
+=item card_form
+
+  print $tb_obj->card_form();
+
+Return CardPay HTML FORM.
+
+=cut
+
+sub card_form {
+  my $self =shift;
+
+  my $sign = $self->get_card_sign();
+
+my $tb_form = <<EOM;
+<!-- CardPay form start -->
+<form action="$self->{action_url}" method=POST>
+<input type=hidden name=PT value="CardPay">
+<input type=hidden name=MID value="$self->{mid}">
+<input type=hidden name=AMT value="$self->{amt}">
+<input type=hidden name=VS value="$self->{vs}">
+<input type=hidden name=CS value="$self->{cs}">
+<input type=hidden name=RURL value="$self->{rurl}">
+<input type=hidden name=DESC value="$self->{desc}">
+<input type=hidden name=RSMS value="$self->{rsms}">
+<input type=hidden name=REM value="$self->{rem}">
+<input type=hidden name=IPC value="$self->{ipc}">
+<input type=hidden name=NAME value="$self->{name}">
+<input type=hidden name=SIGN value="$sign">
+<input type=image src="$self->{image_src}" border=0>
+</form>
+<!-- CardPay form end -->
+EOM
+
+  return($tb_form);
+}
+
 
 =item pay_link
 
   print $tb_obj->pay_link($type);
 
-  Type is "tatrapay" or "eliot" or null. Default is null (action_url).
-  Recomended is null.
+Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
+is null.
 
-  Return URL for payment.
+Return URL for payment.
 
 =cut
 
@@ -310,11 +385,11 @@ sub pay_link {
   my $action;
 
   if ( $type eq 'eliot' ) {
-    $action = $self->{eliot_action_url};
+    $action = $self->eliot_action_url;
   } elsif ( $type eq 'tatra' ){
-    $action = $self->{tatra_action_url};
+    $action = $self->tatra_action_url;
   } else {
-    $action = $self->{action_url};
+    $action = $self->action_url;
   }
 
   my $sign = $self->get_send_sign();
@@ -338,15 +413,49 @@ $tb_form =~ s/\s+//og;
   return($tb_form);
 }
 
+=item card_link
+
+  print $tb_obj->card_link();
+
+Return CardPay URL for payment.
+
+=cut
+
+sub card_link {
+  my $self =shift;
+
+  my $sign = $self->get_card_sign();
+
+my $tb_form = <<EOM;
+$self->{action_url} ?
+PT=CardPay &
+MID=$self->{mid} & 
+AMT=$self->{amt} & 
+VS=$self->{vs} & 
+CS=$self->{cs} & 
+RURL=$self->{rurl} & 
+DESC=$self->{desc} & 
+RSMS=$self->{rsms} & 
+REM=$self->{rem} & 
+IPC=$self->{ipc} & 
+NAME=$self->{name} & 
+SIGN=$sign 
+EOM
+
+$tb_form =~ s/\n//og;
+$tb_form =~ s/\s+//og;
+
+  return($tb_form);
+}
 
 =item generic_pay_form
 
   print $tb_obj->generic_pay_form($type);
 
-  Type is "tatrapay" or "eliot" or null. Default is null (action_url).
-  Recomended is null.
+Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
+is null.
 
-  Return HTML FORM for payment with submit button.
+Return HTML FORM for payment with submit button.
 
 =cut
 
@@ -356,11 +465,11 @@ sub generic_pay_form {
   my $action;
 
   if ( $type eq 'eliot' ) {
-    $action = $self->{eliot_action_url};
+    $action = $self->eliot_action_url;
   } elsif ( $type eq 'tatra' ){
-    $action = $self->{tatra_action_url};
+    $action = $self->tatra_action_url;
   } else {
-    $action = $self->{action_url};
+    $action = $self->action_url;
   }
 
   my $sign = $self->get_send_sign();
@@ -380,6 +489,42 @@ my $tb_form = <<EOM;
 <input type=submit value="Suhlasim">
 </form>
 <!-- tatra banka & eliot ePay form end -->
+EOM
+
+  return($tb_form);
+}
+
+=item generic_cardpay_form
+
+  print $tb_obj->generic_cardpay_form();
+
+Return HTML FORM for CardPay with submit button.
+
+=cut
+
+sub generic_cardpay_form {
+  my $self =shift;
+
+  my $sign = $self->get_send_sign();
+
+my $tb_form = <<EOM;
+<!-- CardPay form start -->
+<form action="$self->{action_url}" method=POST>
+<input type=hidden name=PT value="CardPay">
+<input type=hidden name=MID value="$self->{mid}">
+<input type=hidden name=AMT value="$self->{amt}">
+<input type=hidden name=VS value="$self->{vs}">
+<input type=hidden name=CS value="$self->{cs}">
+<input type=hidden name=RURL value="$self->{rurl}">
+<input type=hidden name=DESC value="$self->{desc}">
+<input type=hidden name=RSMS value="$self->{rsms}">
+<input type=hidden name=REM value="$self->{rem}">
+<input type=hidden name=IPC value="$self->{ipc}">
+<input type=hidden name=NAME value="$self->{name}">
+<input type=hidden name=SIGN value="$sign">
+<input type=submit value="Suhlasim">
+</form>
+<!-- CardPay form end -->
 EOM
 
   return($tb_form);
@@ -431,19 +576,20 @@ __END__
 
 =head1 EXAMPLES
 
-  Look at B<SYNOPSIS>, t/*, examples/* and use the source.
-  ( lookin for a volunteer for writing documentation and man pages)
+Look at B<SYNOPSIS>, B<t/*>, B<examples/*> and use the source.
+(lookin for a volunteer for writing documentation and man pages)
 
 =head1 AUTHOR INFORMATION
 
-  Copyright 2000 Jan ' Kozo ' Vajda, Jan.Vajda@somi.sk. All rights
-reserved.  It may be used and modified freely, but I do request that this
-copyright notice remain attached to the file.  You may modify this module as
-you wish, but if you redistribute a modified version, please attach a note
-listing the modifications you have made.
+Copyright 2000 Jan ' Kozo ' Vajda, Jan.Vajda@alert.sk. All rights reserved.
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, but I do request that this copyright
+notice remain attached to the file. You may modify this module as you wish,
+but if you redistribute a modified version, please attach a note listing the
+modifications you have made.
 
 Address bug reports and comments to:
-Jan.Vajda@somi.sk
+Jan.Vajda@alert.sk
 
 =head1 CREDITS
 
@@ -451,9 +597,9 @@ Thanks very much to:
 
 =over 4
 
-=item my wife Erika
+=item my wife Erika & kozliatko
 
-for patience
+for patience and love
 
 =item Gildir ( gildir@alert.sk ) 
 
@@ -470,3 +616,4 @@ for documentation, C examples and mail helpdesk.
   perl(1),Digest::SHA1(1),Crypt::DES(1).
 
 =cut
+
