@@ -19,8 +19,10 @@ $tb_obj->configure(
                 amt => $amt,
                 rurl => $rurl,
                 rsms => '903666666',
+                name => 'testuser',
+                ipc => '192.168.1.10',
                 desc => 'Example_Description',
                 rem => 'kozo@pobox.sk',
         );
 
-print $tb_obj->pay_form("eliot");
+print $tb_obj->pay_form("card");

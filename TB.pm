@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.23';
+$VERSION = '0.24';
 
 @ISA = qw(Exporter);
 
@@ -33,7 +33,7 @@ Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.23
+  0.24
 
 =head1 SYNOPSIS
 
@@ -46,6 +46,8 @@ Tatrabanka and B<EliotPay> of .eliot.
 	      vs	=> $vs,
 	      amt	=> $amt,
 	      rurl	=> $rurl,
+	      name	=> $uname,
+	      ipc	=> $ip_of_client,
 	      image_src => '/PICS/tatrapay_logo.gif',
   );
 
@@ -67,10 +69,12 @@ or
 	      desc	=> $description,
 	      rsms	=> $mobilephonenumber,
 	      rem	=> $remote_mail,
+	      name	=> $uname,
+	      ipc	=> $ip_of_client,
 	      image_src => '/PICS/tatrapay_logo.gif',
   );
 
-  print $tb_obj->pay_form();
+  print $tb_obj->pay_form("TatraPay");
 
 =head1 DESCRIPTION
 
@@ -118,9 +122,7 @@ sub _init {
   my $self = shift;
 
   ### default values
-  $self->{'action_url'} = "https://moja.tatrabanka.sk/cgi-bin/ibanking/start/e-commerce.jsp";
-  $self->{'tatra_action_url'} = "https://moja.tatrabanka.sk/cgi-bin/ibanking/start/tatrapay.jsp";
-  $self->{'eliot_action_url'} = "https://moja.tatrabanka.sk/cgi-bin/ibanking/start/eliotpay.jsp";
+  $self->{'action_url'} = "https://moja.tatrabanka.sk/cgi-bin/e-commerce/start/e-commerce.jsp";
   $self->{'image_src'} = '/PICS/tatrapay_logo.gif';
 
   return($self);
@@ -155,23 +157,14 @@ Possible parameters is:
            
 Possible but default correct parameters is:
  
-  tatra_action_url => TatraPay action URL
-  default:
-    https://moja.tatrabanka.sk/cgi-bin/ibanking/start/e-commerce.jsp
-
-  eliot_action_url => EliotPay action URL
-  default:
-    https://moja.tatrabanka.sk/cgi-bin/ibanking/start/eliotpay.jsp
-
   action_url => default action URL
   default:
-    https://moja.tatrabanka.sk/cgi-bin/ibanking/start/e-commerce.jsp
+    https://moja.tatrabanka.sk/cgi-bin/e-commerce/start/e-commerce.jsp
 
   image_src => Path to image ( relative to DocumentRoot )
   default:
     /PICS/tatrapay_logo.gif
 
-    
 
 =cut
 
@@ -192,10 +185,9 @@ sub configure {
   $tb_obj->calculate_signatures();
   print $tb_obj->send_sign;
   print $tb_obj->recv_sign;
-  print $tb_obj->card_sign;
 
-Calculate Send, Card and Receive Signature from parameters of  object and
-set send_sign, card_sign and recv_sign.
+Calculate Send and Receive Signature from parameters of  object and
+set send_sign and recv_sign.
 
 =cut
 
@@ -204,7 +196,6 @@ sub calculate_signatures {
   
   $self->get_send_sign();
   $self->get_recv_sign();
-  $self->get_card_sign();
   
 }
 
@@ -228,38 +219,12 @@ sub get_send_sign {
 			$self->amt,
 			$self->vs,
 			$self->cs,
-			$self->rurl
-		);
-
-  return($self->send_sign(_make_sign($key,$initstr)));
-}
-
-=item get_card_sign
-
-  print $tb_obj->get_card_sign();
-  
-Calculate and return CardPay signature. Set $tb_obj->card_sign.
-
-=cut
-
-
-sub get_card_sign {
-
-  my $self =shift;
-
-  my $key = $self->tbkey;
-
-  # make string from incoming values
-  my $initstr = join('',$self->mid,
-			$self->amt,
-			$self->vs,
-			$self->cs,
 			$self->rurl,
 			$self->ipc,
 			$self->name,
 		);
 
-  return($self->card_sign(_make_sign($key,$initstr)));
+  return($self->send_sign(_make_sign($key,$initstr)));
 }
 
 =item get_recv_sign
@@ -287,10 +252,11 @@ sub get_recv_sign {
 
 =item pay_form
 
-  print $tb_obj->pay_form($type);
+  print $tb_obj->pay_form($type,$generic);
 
-Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
-is null.
+Type is "TatraPay", "EliotPay", "CardPay" or null. Default is null (user
+must select type by hand). If defined $generic form will be with input
+type=submit instead input type=image ( and image_src will be ignored )
   
 Return HTML FORM.
 
@@ -298,56 +264,40 @@ Return HTML FORM.
 
 sub pay_form {
   my $self =shift;
-  my $type = shift || 'tatrapay';
+  ### Pay Type
+  my $type = shift;
+  ### Submit type
+  my $generic = shift;
+  
   my $action;
-
-  if ( $type eq 'eliot' ) {
-    $action = $self->eliot_action_url;
-  } elsif ( $type eq 'tatra' ){
-    $action = $self->tatra_action_url;
+  my $submit;
+  my $pt = "";
+  
+  if ( defined $generic ) {
+    $submit = qq|<input type=submit value="Suhlasim">|;
   } else {
-    $action = $self->action_url;
+    $submit = qq|<input type=image src="$self->{image_src}" border=0>|;
   }
+
+  ### detection of Pay Type
+  ### default null ( user select )
+  
+  if ( $type =~ /eliot/i ) {
+    $pt = "EliotPay";
+  } elsif ( $type =~ /card/i ){
+    $pt = "CardPay";
+  } elsif ($type =~ /tatra/i ) {
+    $pt = "TatraPay";
+  }
+
+  $action = $self->{action_url};
 
   my $sign = $self->get_send_sign();
 
 my $tb_form = <<EOM;
-<!-- tatra banka & eliot ePay form start -->
+<!-- TatraPay & EliotPay & CardPay form start -->
 <form action="$action" method=POST>
-<input type=hidden name=MID value="$self->{mid}">
-<input type=hidden name=AMT value="$self->{amt}">
-<input type=hidden name=VS value="$self->{vs}">
-<input type=hidden name=CS value="$self->{cs}">
-<input type=hidden name=RURL value="$self->{rurl}">
-<input type=hidden name=DESC value="$self->{desc}">
-<input type=hidden name=RSMS value="$self->{rsms}">
-<input type=hidden name=REM value="$self->{rem}">
-<input type=hidden name=SIGN value="$sign">
-<input type=image src="$self->{image_src}" border=0>
-</form>
-<!-- tatra banka & eliot ePay form end -->
-EOM
-
-  return($tb_form);
-}
-
-=item card_form
-
-  print $tb_obj->card_form();
-
-Return CardPay HTML FORM.
-
-=cut
-
-sub card_form {
-  my $self =shift;
-
-  my $sign = $self->get_card_sign();
-
-my $tb_form = <<EOM;
-<!-- CardPay form start -->
-<form action="$self->{action_url}" method=POST>
-<input type=hidden name=PT value="CardPay">
+<input type=hidden name=PT value="$pt">
 <input type=hidden name=MID value="$self->{mid}">
 <input type=hidden name=AMT value="$self->{amt}">
 <input type=hidden name=VS value="$self->{vs}">
@@ -359,76 +309,48 @@ my $tb_form = <<EOM;
 <input type=hidden name=IPC value="$self->{ipc}">
 <input type=hidden name=NAME value="$self->{name}">
 <input type=hidden name=SIGN value="$sign">
-<input type=image src="$self->{image_src}" border=0>
+$submit
 </form>
-<!-- CardPay form end -->
+<!-- TatraPay & EliotPay & CardPay form  end -->
 EOM
 
   return($tb_form);
 }
 
-
 =item pay_link
 
   print $tb_obj->pay_link($type);
 
-Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
-is null.
-
+Type is "TatraPay", "EliotPay", "CardPay" or null. Default is null.
+  
 Return URL for payment.
 
 =cut
 
 sub pay_link {
   my $self =shift;
-  my $type = shift || 'tatrapay';
+  my $type = shift;
   my $action;
+  my $pt = "";
 
-  if ( $type eq 'eliot' ) {
-    $action = $self->eliot_action_url;
-  } elsif ( $type eq 'tatra' ){
-    $action = $self->tatra_action_url;
-  } else {
-    $action = $self->action_url;
+  ### detection of Pay Type
+  ### default null ( user select )
+  
+  if ( $type =~ /eliot/i ) {
+    $pt = "EliotPay";
+  } elsif ( $type =~ /card/i ){
+    $pt = "CardPay";
+  } elsif ($type =~ /tatra/i ) {
+    $pt = "TatraPay";
   }
+
+  $action = $self->{action_url};
 
   my $sign = $self->get_send_sign();
 
 my $tb_form = <<EOM;
 $action ?
-MID=$self->{mid} & 
-AMT=$self->{amt} & 
-VS=$self->{vs} & 
-CS=$self->{cs} & 
-RURL=$self->{rurl} & 
-DESC=$self->{desc} & 
-RSMS=$self->{rsms} & 
-REM=$self->{rem} & 
-SIGN=$sign 
-EOM
-
-$tb_form =~ s/\n//og;
-$tb_form =~ s/\s+//og;
-
-  return($tb_form);
-}
-
-=item card_link
-
-  print $tb_obj->card_link();
-
-Return CardPay URL for payment.
-
-=cut
-
-sub card_link {
-  my $self =shift;
-
-  my $sign = $self->get_card_sign();
-
-my $tb_form = <<EOM;
-$self->{action_url} ?
-PT=CardPay &
+PT=$pt &
 MID=$self->{mid} & 
 AMT=$self->{amt} & 
 VS=$self->{vs} & 
@@ -444,88 +366,6 @@ EOM
 
 $tb_form =~ s/\n//og;
 $tb_form =~ s/\s+//og;
-
-  return($tb_form);
-}
-
-=item generic_pay_form
-
-  print $tb_obj->generic_pay_form($type);
-
-Type is "tatra" or "eliot" or null. Default is null (action_url). Recomended
-is null.
-
-Return HTML FORM for payment with submit button.
-
-=cut
-
-sub generic_pay_form {
-  my $self =shift;
-  my $type = shift || 'tatrapay';
-  my $action;
-
-  if ( $type eq 'eliot' ) {
-    $action = $self->eliot_action_url;
-  } elsif ( $type eq 'tatra' ){
-    $action = $self->tatra_action_url;
-  } else {
-    $action = $self->action_url;
-  }
-
-  my $sign = $self->get_send_sign();
-
-my $tb_form = <<EOM;
-<!-- tatra banka & eliot ePay form start -->
-<form action="$action" method=POST>
-<input type=hidden name=MID value="$self->{mid}">
-<input type=hidden name=AMT value="$self->{amt}">
-<input type=hidden name=VS value="$self->{vs}">
-<input type=hidden name=CS value="$self->{cs}">
-<input type=hidden name=RURL value="$self->{rurl}">
-<input type=hidden name=DESC value="$self->{desc}">
-<input type=hidden name=RSMS value="$self->{rsms}">
-<input type=hidden name=REM value="$self->{rem}">
-<input type=hidden name=SIGN value="$sign">
-<input type=submit value="Suhlasim">
-</form>
-<!-- tatra banka & eliot ePay form end -->
-EOM
-
-  return($tb_form);
-}
-
-=item generic_cardpay_form
-
-  print $tb_obj->generic_cardpay_form();
-
-Return HTML FORM for CardPay with submit button.
-
-=cut
-
-sub generic_cardpay_form {
-  my $self =shift;
-
-  my $sign = $self->get_send_sign();
-
-my $tb_form = <<EOM;
-<!-- CardPay form start -->
-<form action="$self->{action_url}" method=POST>
-<input type=hidden name=PT value="CardPay">
-<input type=hidden name=MID value="$self->{mid}">
-<input type=hidden name=AMT value="$self->{amt}">
-<input type=hidden name=VS value="$self->{vs}">
-<input type=hidden name=CS value="$self->{cs}">
-<input type=hidden name=RURL value="$self->{rurl}">
-<input type=hidden name=DESC value="$self->{desc}">
-<input type=hidden name=RSMS value="$self->{rsms}">
-<input type=hidden name=REM value="$self->{rem}">
-<input type=hidden name=IPC value="$self->{ipc}">
-<input type=hidden name=NAME value="$self->{name}">
-<input type=hidden name=SIGN value="$sign">
-<input type=submit value="Suhlasim">
-</form>
-<!-- CardPay form end -->
-EOM
 
   return($tb_form);
 }

@@ -1,4 +1,4 @@
-Perl API for TatraPay and EliotPay e-banking.
+Perl API for TatraPay, CardPay and EliotPay e-banking.
 
 (c) 2000-2001 SOMI Systems a.s    Jan ' Kozo ' Vajda <Jan.Vajda@somi.sk>
 All rights reserved.  It may be used and modified freely, but I do request
@@ -8,3 +8,4 @@ attach a note listing the modifications you have made.
 
 Address bug reports and comments to:
 Jan.Vajda@somi.sk
+

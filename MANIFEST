@@ -8,8 +8,8 @@ t/00load.t			test sample
 t/01gensign.t			test sample
 t/02setparam.t			test sample
 t/03getparam.t			test sample
-t/04cardtest.t			test sample
+doc/technicka_prirucka.doc	Protocol Specification for TatraPay, EliotPay
+doc/technicka_prirucka_CardPay.doc	Protocol Specification for CardPay
 examples/makeform.pl		simple example
+examples/makegenericform.pl	simple example
 examples/makelink.pl		simple example
-examples/makecardform.pl	simple example
-examples/makecardlink.pl	simple example

@@ -23,4 +23,4 @@ $tb_obj->configure(
                 rem => 'kozo@pobox.sk',
         );
 
-print $tb_obj->pay_link("eliot");
+print $tb_obj->pay_link("tatra");
