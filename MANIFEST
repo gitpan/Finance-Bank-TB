@@ -1,0 +1,11 @@
+README				README file
+Changes				history of the package
+MANIFEST			This file
+Makefile.PL			Makefile generator
+TB.pm				The TB module
+t/00load.t			test sample
+t/01gensign.t			test sample
+t/02setparam.t			test sample
+t/03getparam.t			test sample
+examples/makeform.pl		simple example
+examples/makelink.pl		simple example
