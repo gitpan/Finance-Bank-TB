@@ -8,7 +8,6 @@ Init();
 WriteMakefile(
     NAME	 => 'Finance::Bank::TB',
     DISTNAME	 => 'Finance-Bank-TB',
-    'CONFIGURE' => \&configure,
     'PREREQ_PM' => {  Crypt::DES => '2.03',
                     Digest::SHA1 => '1.02',
 		   },
@@ -32,12 +31,6 @@ sub MY::postamble {
 
 EOM
 return();
-}
-
-### configure for future use
-sub configure {
-
-  return;
 }
 
 sub Init () {

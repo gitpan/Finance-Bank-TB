@@ -4,14 +4,14 @@ use lib qw(./blib/lib);
 
 use Finance::Bank::TB;
 
-$mid = '007';
-$key = 'JimiBond';
+$mid = '9999';
+$key = '12345678';
 
 my $tb_obj = Finance::Bank::TB->new($mid,$key);
 
-$vs = '3350078';
-$amt = '516';
-$rurl = 'http://www.server.sk/Your/Reply/Page';
+$vs = '1111';
+$amt = '1234.50';
+$rurl = "https://moja.tatrabanka.sk/cgi-bin/e-commerce/start/example.jsp";
 
 $tb_obj->configure(
                 cs => '0308',
@@ -23,4 +23,7 @@ $tb_obj->configure(
                 rem => 'kozo@pobox.sk',
         );
 
-print $tb_obj->pay_form("EliotPay",1);
+print $tb_obj->pay_form("TatraPay",1);
+
+#print "OFFIC: initStr: 99991234.5070311110308https://moja.tatrabanka.sk/cgi-bin/e-commerce/start/example.jsp\n";
+#print "DEBUG: initStr: $tb_obj->{'initstr'}\n";

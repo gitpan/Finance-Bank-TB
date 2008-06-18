@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.24';
+$VERSION = '0.25';
 
 @ISA = qw(Exporter);
 
@@ -33,7 +33,7 @@ Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.24
+  0.25
 
 =head1 SYNOPSIS
 
@@ -124,6 +124,10 @@ sub _init {
   ### default values
   $self->{'action_url'} = "https://moja.tatrabanka.sk/cgi-bin/e-commerce/start/e-commerce.jsp";
   $self->{'image_src'} = '/PICS/tatrapay_logo.gif';
+  ### currency (mandatory)
+  $self->{'curr'} = '703';
+  $self->{'aredir'} = '0';
+  $self->{'lang'} = 'sk';
 
   return($self);
 }
@@ -217,12 +221,15 @@ sub get_send_sign {
   # make string from incoming values
   my $initstr = join('',$self->mid,
 			$self->amt,
+			$self->curr,
 			$self->vs,
 			$self->cs,
 			$self->rurl,
 			$self->ipc,
 			$self->name,
 		);
+		
+  $self->{'initstr'} = $initstr;
 
   return($self->send_sign(_make_sign($key,$initstr)));
 }
@@ -288,6 +295,8 @@ sub pay_form {
     $pt = "CardPay";
   } elsif ($type =~ /tatra/i ) {
     $pt = "TatraPay";
+    $self->ipc = "";
+    $self->name = "";
   }
 
   $action = $self->{action_url};
@@ -303,6 +312,8 @@ my $tb_form = <<EOM;
 <input type=hidden name=VS value="$self->{vs}">
 <input type=hidden name=CS value="$self->{cs}">
 <input type=hidden name=RURL value="$self->{rurl}">
+<input type=hidden name=AREDIR value="$self->{aredir}">
+<input type=hidden name=LANG value="$self->{lang}">
 <input type=hidden name=DESC value="$self->{desc}">
 <input type=hidden name=RSMS value="$self->{rsms}">
 <input type=hidden name=REM value="$self->{rem}">
@@ -342,6 +353,8 @@ sub pay_link {
     $pt = "CardPay";
   } elsif ($type =~ /tatra/i ) {
     $pt = "TatraPay";
+    $self->ipc = "";
+    $self->name = "";
   }
 
   $action = $self->{action_url};
@@ -356,6 +369,8 @@ AMT=$self->{amt} &
 VS=$self->{vs} & 
 CS=$self->{cs} & 
 RURL=$self->{rurl} & 
+AREDIR=$self->{aredir} & 
+LANG=$self->{lang} & 
 DESC=$self->{desc} & 
 RSMS=$self->{rsms} & 
 REM=$self->{rem} & 
