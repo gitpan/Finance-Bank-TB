@@ -1,6 +1,6 @@
 ##############################################################################
 #                                                                            #
-#  Copyright (c) 2000,2001 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>             #
+#  Copyright (c) 2000-2008 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>             #
 #  All rights reserved.                                                      #
 #                                                                            #
 ##############################################################################
@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.26';
+$VERSION = '0.27';
 
 @ISA = qw(Exporter);
 
@@ -33,7 +33,7 @@ Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.26
+  0.27
 
 =head1 SYNOPSIS
 

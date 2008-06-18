@@ -19,7 +19,7 @@ sub MY::postamble {
   print <<'EOM';
 
 
-            (c) 2000 - 2001 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>
+            (c) 2000 - 2008 Jan 'Kozo' Vajda <Jan.Vajda@alert.sk>
 
             This library is free software; you can redistribute it
             and/or modify it under the same terms as Perl itself,
