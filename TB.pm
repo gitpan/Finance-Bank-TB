@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.25';
+$VERSION = '0.26';
 
 @ISA = qw(Exporter);
 
@@ -33,7 +33,7 @@ Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.25
+  0.26
 
 =head1 SYNOPSIS
 
@@ -82,7 +82,9 @@ Module for generating signatures and pay forms for B<TatraPay> and
 B<CardPay> of Tatra Banka ( http://www.tatrabanka.sk/ ) and for B<EliotPay> of
 .eliot.  ( http://www.eliot.sk/ )
 
-The current version of Finance::Bank::TB is available at
+(EliotPay is deprecated.)
+
+The current version of Finance::Bank::TB is available at CPAN or at 
 
   http://rodney.alert.sk/perl/
 
@@ -155,6 +157,8 @@ Possible parameters is:
       rsms => Mobile Number for SMS notification
        rem => E-mail address for email notification
        ipc => IP address of Client
+    aredir => Automatic redirect (0|1 default 0)
+      lang => User language (default: sk)
       name => Name of client
        res => Result Code of transaction
         ac => Approval Code
@@ -452,7 +456,7 @@ Thanks very much to:
 
 =over 4
 
-=item my wife Erika & kozliatko
+=item my wife Erika & kozliatka
 
 for patience and love
 

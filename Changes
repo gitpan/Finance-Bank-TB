@@ -1,5 +1,9 @@
 Revision history for Perl extension Finance::Bank::TB.
 
+0.26  Thu Jun 19 00:35:57 CEST 2008
+	- fixed typos
+	- add information about AREDIR and LANG
+
 0.25  Wed Jun 18 23:10:55 CEST 2008
 	- new versions of technical specifications in doc/*
 	- added currency (CURR) mandatory parameter
