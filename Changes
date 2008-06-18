@@ -1,5 +1,9 @@
 Revision history for Perl extension Finance::Bank::TB.
 
+0.28  Thu Jun 19 00:49:31 CEST 2008
+	- mea culpa, maxima culpa
+	- only typos
+
 0.26  Thu Jun 19 00:35:57 CEST 2008
 	- fixed typos
 	- add information about AREDIR and LANG

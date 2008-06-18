@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Crypt::DES 2.03;
 
 ### my initial version was 0.11
-$VERSION = '0.27';
+$VERSION = '0.28';
 
 @ISA = qw(Exporter);
 
@@ -33,7 +33,7 @@ Tatrabanka and B<EliotPay> of .eliot.
 
 =head1 VERSION
 
-  0.27
+  0.28
 
 =head1 SYNOPSIS
 
